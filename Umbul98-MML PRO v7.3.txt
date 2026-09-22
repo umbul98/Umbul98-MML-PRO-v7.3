@@ -1,0 +1,864 @@
+//@version=6
+indicator("Umbul98-MML PRO v7.3", shorttitle="Umbul98-MML PRO v7.3", overlay=true, max_labels_count=100, max_lines_count=500)
+
+//====================================================
+// 01 - KULLANIM MODU
+//====================================================
+
+groupMode = "01 - Kullanım Modu"
+
+usageMode = input.string(
+     "Genel Kullanım",
+     "Kullanım Modu",
+     options=["Genel Kullanım", "Benim Kullanımım", "Özel"],
+     group=groupMode)
+
+showTable = input.bool(true, "Seviye Açıklama Tablosu", group=groupMode)
+
+showGraphLabels = input.bool(true, "Grafikte Seviye Etiketleri", group=groupMode)
+
+showZones = input.bool(true, "Bölgeleri Göster", group=groupMode)
+
+lineLength = input.int(
+     100,
+     "MML Çizgi Uzunluğu (Bar)",
+     minval=10,
+     maxval=500,
+     group=groupMode)
+
+//====================================================
+// 02 - MML HESAPLAMA
+//====================================================
+
+groupCalc = "02 - MML Hesaplama"
+
+resolution = input.timeframe("", "Hesaplama Zaman Dilimi", group=groupCalc)
+
+frame = input.int(64, "Frame", minval=8, group=groupCalc)
+
+mult = input.float(1.5, "Multiplier", minval=0.1, step=0.1, group=groupCalc)
+
+ignoreWick = input.bool(true, "Fitilleri Yok Say", group=groupCalc)
+
+calcHigh = ignoreWick ? math.max(open, close) : high
+
+calcLow = ignoreWick ? math.min(open, close) : low
+
+srcHigh = request.security(
+     syminfo.tickerid,
+     resolution,
+     calcHigh,
+     gaps=barmerge.gaps_off,
+     lookahead=barmerge.lookahead_off)
+
+srcLow = request.security(
+     syminfo.tickerid,
+     resolution,
+     calcLow,
+     gaps=barmerge.gaps_off,
+     lookahead=barmerge.lookahead_off)
+
+lookback = math.max(1, int(math.round(frame * mult)))
+
+vLow = ta.lowest(srcLow, lookback)
+
+vHigh = ta.highest(srcHigh, lookback)
+
+vDist = vHigh - vLow
+
+nVar1 = math.log(0.4 * frame) / math.log(10.0)
+
+nVar2 = math.pow(10.0, math.floor(nVar1))
+
+N = nVar2
+
+if N <= 0
+    N := 1.0
+
+safeRange = math.max(vDist, syminfo.mintick)
+
+SI = math.pow(
+     10.0,
+     math.ceil(math.log(safeRange / N) / math.log(10.0)))
+
+if SI <= 0
+    SI := syminfo.mintick
+
+M = 1.0 / N
+
+I = math.floor(vLow * M) * N
+
+Bot = I
+
+Top = I + SI
+
+while Top < vHigh
+    Top += SI
+
+while Bot > vLow
+    Bot -= SI
+
+Increment = (Top - Bot) / 8.0
+
+absTop = Top + 3.0 * Increment
+
+
+//====================================================
+// 03 - MURREY SEVİYELERİ
+//====================================================
+
+Plus38 = absTop
+
+Plus28 = absTop - Increment
+
+Plus18 = absTop - 2.0 * Increment
+
+EightEight = absTop - 3.0 * Increment
+
+SevenEight = absTop - 4.0 * Increment
+
+SixEight = absTop - 5.0 * Increment
+
+FiveEight = absTop - 6.0 * Increment
+
+FourEight = absTop - 7.0 * Increment
+
+ThreeEight = absTop - 8.0 * Increment
+
+TwoEight = absTop - 9.0 * Increment
+
+OneEight = absTop - 10.0 * Increment
+
+ZeroEight = absTop - 11.0 * Increment
+
+Minus18 = absTop - 12.0 * Increment
+
+Minus28 = absTop - 13.0 * Increment
+
+Minus38 = absTop - 14.0 * Increment
+
+//====================================================
+// 04 - SEVİYE GÖRÜNÜRLÜĞÜ
+//====================================================
+
+groupVisibility = "04 - Seviye Görünürlüğü"
+
+visP38 = input.string("Açık", "+3/8 Görünüm", options=["Açık", "Kapalı"], group=groupVisibility)
+visP28 = input.string("Açık", "+2/8 Görünüm", options=["Açık", "Kapalı"], group=groupVisibility)
+visP18 = input.string("Açık", "+1/8 Görünüm", options=["Açık", "Kapalı"], group=groupVisibility)
+vis88  = input.string("Açık", "8/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis78  = input.string("Açık", "7/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis68  = input.string("Açık", "6/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis58  = input.string("Açık", "5/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis48  = input.string("Açık", "4/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis38  = input.string("Açık", "3/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis28  = input.string("Açık", "2/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis18  = input.string("Açık", "1/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+vis08  = input.string("Açık", "0/8 Görünüm",  options=["Açık", "Kapalı"], group=groupVisibility)
+visM18 = input.string("Açık", "-1/8 Görünüm", options=["Açık", "Kapalı"], group=groupVisibility)
+visM28 = input.string("Açık", "-2/8 Görünüm", options=["Açık", "Kapalı"], group=groupVisibility)
+visM38 = input.string("Açık", "-3/8 Görünüm", options=["Açık", "Kapalı"], group=groupVisibility)
+
+isCustomOn(v) =>
+    v == "Açık"
+
+showP38 = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? false : isCustomOn(visP38)
+showP28 = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? false : isCustomOn(visP28)
+showP18 = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? false : isCustomOn(visP18)
+show88  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis88)
+show78  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis78)
+show68  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis68)
+show58  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis58)
+show48  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis48)
+show38  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis38)
+show28  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis28)
+show18  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis18)
+show08  = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? true  : isCustomOn(vis08)
+showM18 = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? false : isCustomOn(visM18)
+showM28 = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? false : isCustomOn(visM28)
+showM38 = usageMode == "Genel Kullanım" ? true : usageMode == "Benim Kullanımım" ? false : isCustomOn(visM38)
+
+//====================================================
+// 05 - SEVİYE RENKLERİ
+//====================================================
+
+groupColors = "05 - Seviye Renkleri"
+
+colP38 = input.color(color.green, "+3/8", group=groupColors)
+colP28 = input.color(color.red, "+2/8", group=groupColors)
+colP18 = input.color(color.gray, "+1/8", group=groupColors)
+col88  = input.color(color.blue, "8/8", group=groupColors)
+col78  = input.color(color.gray, "7/8", group=groupColors)
+col68  = input.color(color.red, "6/8", group=groupColors)
+col58  = input.color(color.green, "5/8", group=groupColors)
+col48  = input.color(color.blue, "4/8", group=groupColors)
+col38  = input.color(color.green, "3/8", group=groupColors)
+col28  = input.color(color.red, "2/8", group=groupColors)
+col18  = input.color(color.gray, "1/8", group=groupColors)
+col08  = input.color(color.blue, "0/8", group=groupColors)
+colM18 = input.color(color.gray, "-1/8", group=groupColors)
+colM28 = input.color(color.red, "-2/8", group=groupColors)
+colM38 = input.color(color.green, "-3/8", group=groupColors)
+
+lineWidth  = input.int(1, "Genel Çizgi Kalınlığı", minval=1, maxval=4, group=groupColors)
+majorWidth = input.int(2, "Ana Seviye Kalınlığı", minval=1, maxval=5, group=groupColors)
+
+//====================================================
+// 08 - GRAFİK ETİKETİ AYARLARI
+//====================================================
+
+groupLabels = "08 - Grafik Etiketleri"
+
+labelOffset = input.int(2, "Etiket Sağ Ofset", minval=1, maxval=20, group=groupLabels)
+showLabelPrice = input.bool(true, "Etikette Fiyatı Göster", group=groupLabels)
+
+labelTextSizeInput = input.string("Küçük", "Etiket Boyutu", options=["Çok Küçük", "Küçük", "Normal", "Büyük"], group=groupLabels)
+
+labelTextSize =
+     labelTextSizeInput == "Çok Küçük" ? size.tiny :
+     labelTextSizeInput == "Küçük" ? size.small :
+     labelTextSizeInput == "Normal" ? size.normal :
+     size.large
+
+makeLabelText(levelName, levelPrice) =>
+    levelName + (showLabelPrice ? "  " + str.tostring(levelPrice, format.mintick) : "")
+
+//====================================================
+// 06 - GRAFİK ÇİZGİLERİ (GÜNCELLENDİ: SABİT & SINIRLI BAR)
+//====================================================
+
+var line mmlP38 = na
+var line mmlP28 = na
+var line mmlP18 = na
+var line mml88  = na
+var line mml78  = na
+var line mml68  = na
+var line mml58  = na
+var line mml48  = na
+var line mml38  = na
+var line mml28  = na
+var line mml18  = na
+var line mml08  = na
+var line mmlM18 = na
+var line mmlM28 = na
+var line mmlM38 = na
+
+if barstate.islast
+    line.delete(mmlP38)
+    line.delete(mmlP28)
+    line.delete(mmlP18)
+    line.delete(mml88)
+    line.delete(mml78)
+    line.delete(mml68)
+    line.delete(mml58)
+    line.delete(mml48)
+    line.delete(mml38)
+    line.delete(mml28)
+    line.delete(mml18)
+    line.delete(mml08)
+    line.delete(mmlM18)
+    line.delete(mmlM28)
+    line.delete(mmlM38)
+
+    x1 = bar_index - lineLength
+    x2 = bar_index + labelOffset
+
+    if showP38
+        mmlP38 := line.new(x1, Plus38, x2, Plus38, xloc=xloc.bar_index, color=colP38, width=lineWidth)
+    if showP28
+        mmlP28 := line.new(x1, Plus28, x2, Plus28, xloc=xloc.bar_index, color=colP28, width=lineWidth)
+    if showP18
+        mmlP18 := line.new(x1, Plus18, x2, Plus18, xloc=xloc.bar_index, color=colP18, width=lineWidth)
+    if show88
+        mml88 := line.new(x1, EightEight, x2, EightEight, xloc=xloc.bar_index, color=col88, width=majorWidth)
+    if show78
+        mml78 := line.new(x1, SevenEight, x2, SevenEight, xloc=xloc.bar_index, color=col78, width=lineWidth)
+    if show68
+        mml68 := line.new(x1, SixEight, x2, SixEight, xloc=xloc.bar_index, color=col68, width=lineWidth)
+    if show58
+        mml58 := line.new(x1, FiveEight, x2, FiveEight, xloc=xloc.bar_index, color=col58, width=lineWidth)
+    if show48
+        mml48 := line.new(x1, FourEight, x2, FourEight, xloc=xloc.bar_index, color=col48, width=majorWidth)
+    if show38
+        mml38 := line.new(x1, ThreeEight, x2, ThreeEight, xloc=xloc.bar_index, color=col38, width=lineWidth)
+    if show28
+        mml28 := line.new(x1, TwoEight, x2, TwoEight, xloc=xloc.bar_index, color=col28, width=lineWidth)
+    if show18
+        mml18 := line.new(x1, OneEight, x2, OneEight, xloc=xloc.bar_index, color=col18, width=lineWidth)
+    if show08
+        mml08 := line.new(x1, ZeroEight, x2, ZeroEight, xloc=xloc.bar_index, color=col08, width=majorWidth)
+    if showM18
+        mmlM18 := line.new(x1, Minus18, x2, Minus18, xloc=xloc.bar_index, color=colM18, width=lineWidth)
+    if showM28
+        mmlM28 := line.new(x1, Minus28, x2, Minus28, xloc=xloc.bar_index, color=colM28, width=lineWidth)
+    if showM38
+        mmlM38 := line.new(x1, Minus38, x2, Minus38, xloc=xloc.bar_index, color=colM38, width=lineWidth)
+
+//====================================================
+// 07 - BÖLGELER
+//====================================================
+
+pM18 = plot(showZones ? Minus18 : na, "Zone M18", display=display.none)
+pP18 = plot(showZones ? Plus18 : na, "Zone P18", display=display.none)
+p38  = plot(showZones ? ThreeEight : na, "Zone 38", display=display.none)
+p58  = plot(showZones ? FiveEight : na, "Zone 58", display=display.none)
+p78  = plot(showZones ? SevenEight : na, "Zone 78", display=display.none)
+
+fill(pM18, pP18, color=color.new(color.green, 88))
+fill(p38, p58, color=color.new(color.aqua, 88))
+fill(p78, pP18, color=color.new(color.red, 88))
+
+//====================================================
+// 08 - GRAFİK ETİKETLERİ GÜNCELLEME
+//====================================================
+
+var label lblP38 = na
+var label lblP28 = na
+var label lblP18 = na
+var label lbl88  = na
+var label lbl78  = na
+var label lbl68  = na
+var label lbl58  = na
+var label lbl48  = na
+var label lbl38  = na
+var label lbl28  = na
+var label lbl18  = na
+var label lbl08  = na
+var label lblM18 = na
+var label lblM28 = na
+var label lblM38 = na
+
+updateLabel(lbl, enabled, levelPrice, levelName, levelColor) =>
+    result = lbl
+    if enabled and showGraphLabels and barstate.islast
+        if na(result)
+            result := label.new(
+                 bar_index + labelOffset,
+                 levelPrice,
+                 makeLabelText(levelName, levelPrice),
+                 xloc=xloc.bar_index,
+                 yloc=yloc.price,
+                 style=label.style_label_left,
+                 color=levelColor,
+                 textcolor=color.white,
+                 size=labelTextSize)
+        else
+            label.set_xy(result, bar_index + labelOffset, levelPrice)
+            label.set_text(result, makeLabelText(levelName, levelPrice))
+            label.set_color(result, levelColor)
+            label.set_textcolor(result, color.white)
+            label.set_size(result, labelTextSize)
+    else
+        if not na(result)
+            label.delete(result)
+            result := na
+    result
+
+if barstate.islast
+    lblP38 := updateLabel(lblP38, showP38, Plus38, "+3/8", colP38)
+    lblP28 := updateLabel(lblP28, showP28, Plus28, "+2/8", colP28)
+    lblP18 := updateLabel(lblP18, showP18, Plus18, "+1/8", colP18)
+    lbl88  := updateLabel(lbl88, show88, EightEight, "8/8", col88)
+    lbl78  := updateLabel(lbl78, show78, SevenEight, "7/8", col78)
+    lbl68  := updateLabel(lbl68, show68, SixEight, "6/8", col68)
+    lbl58  := updateLabel(lbl58, show58, FiveEight, "5/8", col58)
+    lbl48  := updateLabel(lbl48, show48, FourEight, "4/8", col48)
+    lbl38  := updateLabel(lbl38, show38, ThreeEight, "3/8", col38)
+    lbl28  := updateLabel(lbl28, show28, TwoEight, "2/8", col28)
+    lbl18  := updateLabel(lbl18, show18, OneEight, "1/8", col18)
+    lbl08  := updateLabel(lbl08, show08, ZeroEight, "0/8", col08)
+    lblM18 := updateLabel(lblM18, showM18, Minus18, "-1/8", colM18)
+    lblM28 := updateLabel(lblM28, showM28, Minus28, "-2/8", colM28)
+    lblM38 := updateLabel(lblM38, showM38, Minus38, "-3/8", colM38)
+
+//====================================================
+// 09 - TABLO RENKLERİ
+//====================================================
+
+groupTableColors = "09 - Tablo Renkleri"
+
+tablePriceColor       = input.color(color.white, "Fiyat Yazı Rengi", group=groupTableColors)
+tableDescriptionColor = input.color(color.silver, "Açıklama Yazı Rengi", group=groupTableColors)
+tableLevelColor       = input.color(color.white, "Seviye Yazı Rengi", group=groupTableColors)
+tableHeaderColor      = input.color(color.white, "Başlık Yazı Rengi", group=groupTableColors)
+tableBackground       = input.color(color.rgb(35, 35, 35), "Başlık Arka Planı", group=groupTableColors)
+
+//====================================================
+// 10 - SİNYAL MOTORU
+//====================================================
+
+groupSignal = "10 - MML Sinyal Motoru"
+
+enableSignalEngine       = input.bool(true, "MML Sinyal Motorunu Aktif Et", group=groupSignal)
+atrLength                = input.int(14, "ATR Periyodu", minval=1, group=groupSignal)
+touchAtrPercent          = input.float(0.20, "Temas Hassasiyeti ATR %", minval=0.01, maxval=2.0, step=0.05, group=groupSignal)
+breakAtrPercent          = input.float(0.15, "Kırılım Mesafesi ATR %", minval=0.01, maxval=2.0, step=0.05, group=groupSignal)
+requireBodyConfirmation  = input.bool(true, "Mum Gövdesi Onayı", group=groupSignal)
+requireCloseConfirmation = input.bool(true, "Kapanış Onayı", group=groupSignal)
+showSignalLabel          = input.bool(true, "Grafikte Sinyal Etiketi", group=groupSignal)
+
+atrValue = ta.atr(atrLength)
+touchDistance = atrValue * touchAtrPercent / 100.0
+breakDistance = atrValue * breakAtrPercent / 100.0
+
+bullCandle = close > open
+bearCandle = close < open
+
+//====================================================
+// 11 - SİNYAL HESAPLAMA
+//====================================================
+
+getSignal(level) =>
+    signal = "NÖTR"
+
+    touched = low <= level + touchDistance and high >= level - touchDistance
+
+    bullishBreak = ta.crossover(close, level) and close > level + breakDistance
+    bearishBreak = ta.crossunder(close, level) and close < level - breakDistance
+
+    bullishReversal = touched and close > level and (not requireBodyConfirmation or bullCandle) and (not requireCloseConfirmation or close > level)
+    bearishReversal = touched and close < level and (not requireBodyConfirmation or bearCandle) and (not requireCloseConfirmation or close < level)
+
+    support = touched and low <= level + touchDistance and close >= level
+    resistance = touched and high >= level - touchDistance and close <= level
+
+    if enableSignalEngine
+        if bullishBreak
+            signal := "KIRILIM ↑"
+        else if bearishBreak
+            signal := "KIRILIM ↓"
+        else if bullishReversal
+            signal := "DÖNÜŞ ↑"
+        else if bearishReversal
+            signal := "DÖNÜŞ ↓"
+        else if support
+            signal := "DESTEK"
+        else if resistance
+            signal := "DİRENÇ"
+
+    signal
+
+//====================================================
+// 12 - EN YAKIN SEVİYE
+//====================================================
+
+distP38 = math.abs(close - Plus38)
+distP28 = math.abs(close - Plus28)
+distP18 = math.abs(close - Plus18)
+dist88  = math.abs(close - EightEight)
+dist78  = math.abs(close - SevenEight)
+dist68  = math.abs(close - SixEight)
+dist58  = math.abs(close - FiveEight)
+dist48  = math.abs(close - FourEight)
+dist38  = math.abs(close - ThreeEight)
+dist28  = math.abs(close - TwoEight)
+dist18  = math.abs(close - OneEight)
+dist08  = math.abs(close - ZeroEight)
+distM18 = math.abs(close - Minus18)
+distM28 = math.abs(close - Minus28)
+distM38 = math.abs(close - Minus38)
+
+nearest = math.min(distP38, math.min(distP28, math.min(distP18, math.min(dist88, math.min(dist78, math.min(dist68, math.min(dist58, math.min(dist48, math.min(dist38, math.min(dist28, math.min(dist18, math.min(dist08, math.min(distM18, math.min(distM28, distM38))))))))))))))
+
+activeName =
+     nearest == distP38 ? "+3/8" :
+     nearest == distP28 ? "+2/8" :
+     nearest == distP18 ? "+1/8" :
+     nearest == dist88  ? "8/8"  :
+     nearest == dist78  ? "7/8"  :
+     nearest == dist68  ? "6/8"  :
+     nearest == dist58  ? "5/8"  :
+     nearest == dist48  ? "4/8"  :
+     nearest == dist38  ? "3/8"  :
+     nearest == dist28  ? "2/8"  :
+     nearest == dist18  ? "1/8"  :
+     nearest == dist08  ? "0/8"  :
+     nearest == distM18 ? "-1/8" :
+     nearest == distM28 ? "-2/8" :
+     "-3/8"
+
+//====================================================
+// 13 - AKTİF SEVİYE SİNYALİ
+//====================================================
+
+activeSignal =
+     activeName == "+3/8" ? getSignal(Plus38) :
+     activeName == "+2/8" ? getSignal(Plus28) :
+     activeName == "+1/8" ? getSignal(Plus18) :
+     activeName == "8/8"  ? getSignal(EightEight) :
+     activeName == "7/8"  ? getSignal(SevenEight) :
+     activeName == "6/8"  ? getSignal(SixEight) :
+     activeName == "5/8"  ? getSignal(FiveEight) :
+     activeName == "4/8"  ? getSignal(FourEight) :
+     activeName == "3/8"  ? getSignal(ThreeEight) :
+     activeName == "2/8"  ? getSignal(TwoEight) :
+     activeName == "1/8"  ? getSignal(OneEight) :
+     activeName == "0/8"  ? getSignal(ZeroEight) :
+     activeName == "-1/8" ? getSignal(Minus18) :
+     activeName == "-2/8" ? getSignal(Minus28) :
+     getSignal(Minus38)
+
+getTableSignal(levelName) =>
+    levelName == activeName ? activeSignal : "NÖTR"
+
+//====================================================
+// 15 - SİNYAL RENKLERİ
+//====================================================
+
+signalColor(signal) =>
+    signal == "DESTEK"   ? color.green :
+     signal == "DİRENÇ"   ? color.red :
+     signal == "DÖNÜŞ ↑"  ? color.lime :
+     signal == "DÖNÜŞ ↓"  ? color.orange :
+     signal == "KIRILIM ↑"? color.aqua :
+     signal == "KIRILIM ↓"? color.fuchsia :
+     color.gray
+
+//====================================================
+// 16 - AKTİF SİNYAL GRAFİK ETİKETİ
+//====================================================
+
+var label activeSignalLabel = na
+
+if barstate.islast
+    if not na(activeSignalLabel)
+        label.delete(activeSignalLabel)
+        activeSignalLabel := na
+
+    if showSignalLabel and enableSignalEngine and activeSignal != "NÖTR"
+        activeSignalLabel := label.new(
+             bar_index + labelOffset,
+             close,
+             activeName + "  " + activeSignal,
+             xloc=xloc.bar_index,
+             yloc=yloc.price,
+             style=label.style_label_left,
+             color=signalColor(activeSignal),
+             textcolor=color.white,
+             size=size.small)
+
+//====================================================
+// 17 - ÖZEL AÇIKLAMALAR
+//====================================================
+
+groupDesc = "11 - Özel Açıklamalar"
+
+dP38 = input.string("Çok güçlü yükseliş sonrası olası dönüş bölgesi.", "+3/8 Açıklama", group=groupDesc)
+dP28 = input.string("Extreme overshoot - kâr alma ve dönüş riski.", "+2/8 Açıklama", group=groupDesc)
+dP18 = input.string("Overshoot - dikkat bölgesi.", "+1/8 Açıklama", group=groupDesc)
+d88  = input.string("Ultimate Resistance - güçlü direnç.", "8/8 Açıklama", group=groupDesc)
+d78  = input.string("Stop & Reverse - kritik karar bölgesi.", "7/8 Açıklama", group=groupDesc)
+d68  = input.string("Güçlü pivot - dönüş veya reaksiyon bölgesi.", "6/8 Açıklama", group=groupDesc)
+d58  = input.string("Range üst yarısı - pozitif bölge.", "5/8 Açıklama", group=groupDesc)
+d48  = input.string("Ana pivot - en önemli denge seviyesi.", "4/8 Açıklama", group=groupDesc)
+d38  = input.string("Range alt yarısı - negatif bölge.", "3/8 Açıklama", group=groupDesc)
+d28  = input.string("Güçlü pivot - tepki veya dönüş bölgesi.", "2/8 Açıklama", group=groupDesc)
+d18  = input.string("Stop & Reverse - kritik karar bölgesi.", "1/8 Açıklama", group=groupDesc)
+d08  = input.string("Ultimate Support - güçlü destek.", "0/8 Açıklama", group=groupDesc)
+dM18 = input.string("Oversold - aşırı satım bölgesi.", "-1/8 Açıklama", group=groupDesc)
+dM28 = input.string("Extreme oversold - güçlü dönüş ihtimali.", "-2/8 Açıklama", group=groupDesc)
+dM38 = input.string("Çok aşırı alt bölge - güçlü bullish reversal ihtimali.", "-3/8 Açıklama", group=groupDesc)
+
+gP38 = "Aşırı üst bölge."
+gP28 = "Extreme overshoot."
+gP18 = "Overshoot."
+g88  = "Ultimate Resistance."
+g78  = "Stop & Reverse."
+g68  = "Güçlü pivot."
+g58  = "Range üst yarısı."
+g48  = "Ana pivot."
+g38  = "Range alt yarısı."
+g28  = "Güçlü pivot."
+g18  = "Stop & Reverse."
+g08  = "Ultimate Support."
+gM18 = "Oversold."
+gM28 = "Extreme oversold."
+gM38 = "Imminent bullish reversal."
+
+mP38 = "Çok aşırı yükseliş. Kâr alma ve dönüş ihtimali yüksek."
+mP28 = "Aşırı taşma. Pozisyon azaltma ve dönüş teyidi aranabilir."
+mP18 = "Aşırı bölge. Yeni long girişlerinde dikkat."
+m88  = "Ana direnç. Güçlü kırılım veya reddedilme izlenir."
+m78  = "Kritik karar seviyesi. Trend devamı veya dönüş teyidi aranır."
+m68  = "Güçlü reaksiyon seviyesi."
+m58  = "Pozitif bölge. Fiyatın üst yarıda kalması güçlüdür."
+m48  = "Ana denge/pivot. Üzeri bullish, altı bearish baskı gösterebilir."
+m38  = "Negatif bölge. Fiyatın alt yarıda kalması zayıflık gösterir."
+m28  = "Güçlü destek/pivot. Tepki ihtimali takip edilir."
+m18  = "Kritik karar seviyesi. Stop & Reverse bölgesi."
+m08  = "Ana destek. Güçlü tepki veya kırılım izlenir."
+mM18 = "Aşırı satım. Tepki ihtimali artar."
+mM28 = "Extreme oversold. Güçlü dönüş ihtimali."
+mM38 = "Çok aşırı alt bölge. Bullish reversal için önemli."
+
+getDesc(generalDesc, myDesc, customDesc) =>
+    usageMode == "Genel Kullanım" ? generalDesc :
+     usageMode == "Benim Kullanımım" ? myDesc :
+     customDesc
+
+descP38 = getDesc(gP38, mP38, dP38)
+descP28 = getDesc(gP28, mP28, dP28)
+descP18 = getDesc(gP18, mP18, dP18)
+desc88  = getDesc(g88, m88, d88)
+desc78  = getDesc(g78, m78, d78)
+desc68  = getDesc(g68, m68, d68)
+desc58  = getDesc(g58, m58, d58)
+desc48  = getDesc(g48, m48, d48)
+desc38  = getDesc(g38, m38, d38)
+desc28  = getDesc(g28, m28, d28)
+desc18  = getDesc(g18, m18, d18)
+desc08  = getDesc(g08, m08, d08)
+descM18 = getDesc(gM18, mM18, dM18)
+descM28 = getDesc(gM28, mM28, dM28)
+descM38 = getDesc(gM38, mM38, dM38)
+
+//====================================================
+// 18 - TABLO
+//====================================================
+
+var table mmlTable = table.new(position.top_right, 4, 16, border_width=1)
+
+if barstate.islast
+    table.clear(mmlTable, 0, 0, 3, 15)
+    if showTable
+        table.cell(mmlTable, 0, 0, "SEVİYE", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(mmlTable, 1, 0, "FİYAT", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(mmlTable, 2, 0, "SİNYAL", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(mmlTable, 3, 0, "AÇIKLAMA", text_color=tableHeaderColor, bgcolor=tableBackground)
+
+        row = 1
+
+        if showP38
+            sig = getTableSignal("+3/8")
+            active = activeName == "+3/8"
+            bg = active ? color.new(colP38, 70) : na
+            table.cell(mmlTable, 0, row, "+3/8", text_color=colP38, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(Plus38, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, descP38, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if showP28
+            sig = getTableSignal("+2/8")
+            active = activeName == "+2/8"
+            bg = active ? color.new(colP28, 70) : na
+            table.cell(mmlTable, 0, row, "+2/8", text_color=colP28, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(Plus28, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, descP28, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if showP18
+            sig = getTableSignal("+1/8")
+            active = activeName == "+1/8"
+            bg = active ? color.new(colP18, 70) : na
+            table.cell(mmlTable, 0, row, "+1/8", text_color=colP18, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(Plus18, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, descP18, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show88
+            sig = getTableSignal("8/8")
+            active = activeName == "8/8"
+            bg = active ? color.new(col88, 70) : na
+            table.cell(mmlTable, 0, row, "8/8", text_color=col88, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(EightEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc88, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show78
+            sig = getTableSignal("7/8")
+            active = activeName == "7/8"
+            bg = active ? color.new(col78, 70) : na
+            table.cell(mmlTable, 0, row, "7/8", text_color=col78, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(SevenEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc78, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show68
+            sig = getTableSignal("6/8")
+            active = activeName == "6/8"
+            bg = active ? color.new(col68, 70) : na
+            table.cell(mmlTable, 0, row, "6/8", text_color=col68, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(SixEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc68, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show58
+            sig = getTableSignal("5/8")
+            active = activeName == "5/8"
+            bg = active ? color.new(col58, 70) : na
+            table.cell(mmlTable, 0, row, "5/8", text_color=col58, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(FiveEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc58, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show48
+            sig = getTableSignal("4/8")
+            active = activeName == "4/8"
+            bg = active ? color.new(col48, 70) : na
+            table.cell(mmlTable, 0, row, "4/8", text_color=col48, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(FourEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc48, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show38
+            sig = getTableSignal("3/8")
+            active = activeName == "3/8"
+            bg = active ? color.new(col38, 70) : na
+            table.cell(mmlTable, 0, row, "3/8", text_color=col38, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(ThreeEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc38, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show28
+            sig = getTableSignal("2/8")
+            active = activeName == "2/8"
+            bg = active ? color.new(col28, 70) : na
+            table.cell(mmlTable, 0, row, "2/8", text_color=col28, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(TwoEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc28, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show18
+            sig = getTableSignal("1/8")
+            active = activeName == "1/8"
+            bg = active ? color.new(col18, 70) : na
+            table.cell(mmlTable, 0, row, "1/8", text_color=col18, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(OneEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc18, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if show08
+            sig = getTableSignal("0/8")
+            active = activeName == "0/8"
+            bg = active ? color.new(col08, 70) : na
+            table.cell(mmlTable, 0, row, "0/8", text_color=col08, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(ZeroEight, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, desc08, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if showM18
+            sig = getTableSignal("-1/8")
+            active = activeName == "-1/8"
+            bg = active ? color.new(colM18, 70) : na
+            table.cell(mmlTable, 0, row, "-1/8", text_color=colM18, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(Minus18, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, descM18, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if showM28
+            sig = getTableSignal("-2/8")
+            active = activeName == "-2/8"
+            bg = active ? color.new(colM28, 70) : na
+            table.cell(mmlTable, 0, row, "-2/8", text_color=colM28, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(Minus28, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, descM28, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+        if showM38
+            sig = getTableSignal("-3/8")
+            active = activeName == "-3/8"
+            bg = active ? color.new(colM38, 70) : na
+            table.cell(mmlTable, 0, row, "-3/8", text_color=colM38, bgcolor=bg)
+            table.cell(mmlTable, 1, row, str.tostring(Minus38, format.mintick), text_color=tablePriceColor, bgcolor=bg)
+            table.cell(mmlTable, 2, row, sig, text_color=signalColor(sig), bgcolor=bg)
+            table.cell(mmlTable, 3, row, descM38, text_color=tableDescriptionColor, bgcolor=bg)
+            row += 1
+
+//====================================================
+// 19 - ÖZET PANEL
+//====================================================
+
+var table infoTable = table.new(position.bottom_right, 2, 4, border_width=1)
+
+if barstate.islast
+    table.clear(infoTable, 0, 0, 1, 3)
+    if showTable
+        table.cell(infoTable, 0, 0, "MML MOD", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(infoTable, 1, 0, usageMode, text_color=tablePriceColor, bgcolor=tableBackground)
+        table.cell(infoTable, 0, 1, "AKTİF", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(infoTable, 1, 1, activeName, text_color=color.lime, bgcolor=tableBackground)
+        table.cell(infoTable, 0, 2, "SİNYAL", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(infoTable, 1, 2, activeSignal, text_color=signalColor(activeSignal), bgcolor=tableBackground)
+        table.cell(infoTable, 0, 3, "FİYAT", text_color=tableHeaderColor, bgcolor=tableBackground)
+        table.cell(infoTable, 1, 3, str.tostring(close, format.mintick), text_color=tablePriceColor, bgcolor=tableBackground)
+
+//====================================================
+// 20 - FRAME DEĞİŞİMİ
+//====================================================
+
+isNewFrame = ta.change(time(resolution)) != 0
+
+plotshape(
+     isNewFrame,
+     title="Yeni MML Frame",
+     style=shape.circle,
+     location=location.bottom,
+     size=size.tiny,
+     color=color.new(color.blue, 0),
+     text="MML")
+
+//====================================================
+// 21 - ALARM KOŞULLARI
+//====================================================
+
+p38Cross = ta.cross(close, Plus38)
+p28Cross = ta.cross(close, Plus28)
+p18Cross = ta.cross(close, Plus18)
+
+l88Cross = ta.cross(close, EightEight)
+l78Cross = ta.cross(close, SevenEight)
+l68Cross = ta.cross(close, SixEight)
+l58Cross = ta.cross(close, FiveEight)
+l48Cross = ta.cross(close, FourEight)
+l38Cross = ta.cross(close, ThreeEight)
+l28Cross = ta.cross(close, TwoEight)
+l18Cross = ta.cross(close, OneEight)
+l08Cross = ta.cross(close, ZeroEight)
+
+m18Cross = ta.cross(close, Minus18)
+m28Cross = ta.cross(close, Minus28)
+m38Cross = ta.cross(close, Minus38)
+
+alertcondition(p38Cross, "MML +3/8", "Fiyat MML +3/8 seviyesini kesti.")
+alertcondition(p28Cross, "MML +2/8", "Fiyat MML +2/8 seviyesini kesti.")
+alertcondition(p18Cross, "MML +1/8", "Fiyat MML +1/8 seviyesini kesti.")
+alertcondition(l88Cross, "MML 8/8", "Fiyat MML 8/8 seviyesini kesti.")
+alertcondition(l78Cross, "MML 7/8", "Fiyat MML 7/8 seviyesini kesti.")
+alertcondition(l68Cross, "MML 6/8", "Fiyat MML 6/8 seviyesini kesti.")
+alertcondition(l58Cross, "MML 5/8", "Fiyat MML 5/8 seviyesini kesti.")
+alertcondition(l48Cross, "MML 4/8", "Fiyat MML 4/8 seviyesini kesti.")
+alertcondition(l38Cross, "MML 3/8", "Fiyat MML 3/8 seviyesini kesti.")
+alertcondition(l28Cross, "MML 2/8", "Fiyat MML 2/8 seviyesini kesti.")
+alertcondition(l18Cross, "MML 1/8", "Fiyat MML 1/8 seviyesini kesti.")
+alertcondition(l08Cross, "MML 0/8", "Fiyat MML 0/8 seviyesini kesti.")
+alertcondition(m18Cross, "MML -1/8", "Fiyat MML -1/8 seviyesini kesti.")
+alertcondition(m28Cross, "MML -2/8", "Fiyat MML -2/8 seviyesini kesti.")
+alertcondition(m38Cross, "MML -3/8", "Fiyat MML -3/8 seviyesini kesti.")
+
+//====================================================
+// 22 - SİNYAL ALARMLARI
+//====================================================
+
+activeBullReversal = activeSignal == "DÖNÜŞ ↑"
+activeBearReversal = activeSignal == "DÖNÜŞ ↓"
+activeBullBreak    = activeSignal == "KIRILIM ↑"
+activeBearBreak    = activeSignal == "KIRILIM ↓"
+
+alertcondition(activeBullReversal, "MML Bullish Dönüş", "MML seviyesinde bullish dönüş tespit edildi.")
+alertcondition(activeBearReversal, "MML Bearish Dönüş", "MML seviyesinde bearish dönüş tespit edildi.")
+alertcondition(activeBullBreak, "MML Yukarı Kırılım", "MML seviyesi yukarı kırıldı.")
+alertcondition(activeBearBreak, "MML Aşağı Kırılım", "MML seviyesi aşağı kırıldı.")
